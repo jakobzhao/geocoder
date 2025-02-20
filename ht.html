@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Japan Earthquake Heatmap</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 30px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .legend div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend span {
+            display: inline-block;
+            width: 20px;
+            height: 10px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="legend">
+        <strong>Earthquake Intensity</strong>
+        <div><span style="background: yellow;"></span> Low</div>
+        <div><span style="background: orange;"></span> Medium</div>
+        <div><span style="background: red;"></span> High</div>
+    </div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoiemhhb2JvIiwiYSI6ImNqaW85NzNrdDA3OXczcHQ5aTZvYmtjc2gifQ.ummEQxsRIweCIdv9CRRzOw';
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v10',
+            center: [138, 37], // Centered around Japan
+            zoom: 5
+        });
+
+        map.on('load', function () {
+            map.addSource('earthquakes', {
+                type: 'geojson',
+                data: 'https://jakobzhao.github.io/geog328/labs/lab03/assets/earthquakes.geojson'
+            });
+
+            map.addLayer({
+                id: 'earthquake-heatmap',
+                type: 'heatmap',
+                source: 'earthquakes',
+                paint: {
+                    'heatmap-weight': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'mag'],
+                        0, 0,
+                        6, 1
+                    ],
+                    'heatmap-intensity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 1,
+                        9, 3
+                    ],
+                    'heatmap-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['heatmap-density'],
+                        0, 'rgba(255, 255, 0, 0)',
+                        0.2, 'rgba(255, 255, 0, 0.5)',
+                        0.4, 'rgba(255, 165, 0, 0.7)',
+                        0.6, 'rgba(255, 69, 0, 0.8)',
+                        1, 'rgba(255, 0, 0, 0.8)'
+                    ],
+                    'heatmap-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 2,
+                        9, 20
+                    ],
+                    'heatmap-opacity': 0.8
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

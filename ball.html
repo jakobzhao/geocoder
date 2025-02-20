@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Japan Choropleth Map with Earthquake 3D Balls</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+    <script src="https://cdn.jsdelivr.net/gh/jscastro76/threebox@v.2.2.2/dist/threebox.min.js"
+        type="text/javascript"></script>
+    <link href="https://cdn.jsdelivr.net/gh/jscastro76/threebox@v.2.2.2/dist/threebox.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id='map'></div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoiemhhb2JvIiwiYSI6ImNqaW85NzNrdDA3OXczcHQ5aTZvYmtjc2gifQ.ummEQxsRIweCIdv9CRRzOw';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            center: [138.2529, 36.2048],
+            zoom: 5,
+            pitch: 45,
+            bearing: -17.6
+        });
+
+        function getRandomValue(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        fetch("https://jakobzhao.github.io/geog328/labs/lab03/assets/japan.json")
+            .then(response => response.json())
+            .then(data => {
+                data.features.forEach(feature => {
+                    feature.properties.randomValue = getRandomValue(0, 100);
+                    feature.properties.extrusionHeight = getRandomValue(1000, 5000);
+                });
+
+                map.addSource('japan', {
+                    "type": "geojson",
+                    "data": data
+                });
+
+                map.addLayer({
+                    "id": "japan-extrusion",
+                    "type": "fill-extrusion",
+                    "source": "japan",
+                    "paint": {
+                        "fill-extrusion-color": [
+                            "interpolate",
+                            ["linear"],
+                            ["get", "randomValue"],
+                            0, "yellow",
+                            50, "orange",
+                            100, "red"
+                        ],
+                        "fill-extrusion-height": ["get", "extrusionHeight"],
+                        "fill-extrusion-opacity": 0.8
+                    }
+                });
+            });
+
+        map.on('style.load', function () {
+            window.tb = new Threebox(map, map.getCanvas().getContext('webgl'), { realSunlight: true });
+            map.addLayer({
+                id: 'custom-threebox-layer', type: 'custom', renderingMode: '3d',
+                onAdd: function () { },
+                render: function () { tb.update(); }
+            });
+
+            fetch("https://jakobzhao.github.io/geog328/labs/lab03/assets/earthquakes.geojson")
+                .then(response => response.json())
+                .then(data => {
+                    data.features.forEach(feature => {
+                        const coords = feature.geometry.coordinates;
+                        const magnitude = feature.properties.mag;
+
+                        let sphere = tb.loadObj({
+                            obj: 'https://raw.githubusercontent.com/jscastro76/threebox/master/examples/assets/ball.glb',
+                            scale: magnitude * 0.5,
+                            rotation: { x: 0, y: 0, z: 0 },
+                            position: { lon: coords[0], lat: coords[1], altitude: magnitude * 1000 },
+                            anchor: 'center'
+                        });
+                        tb.add(sphere);
+                    });
+                });
+        });
+    </script>
+</body>
+
+</html>

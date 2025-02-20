@@ -33,7 +33,7 @@
         mapboxgl.accessToken = 'pk.eyJ1Ijoiemhhb2JvIiwiYSI6ImNqaW85NzNrdDA3OXczcHQ5aTZvYmtjc2gifQ.ummEQxsRIweCIdv9CRRzOw';
         const map = new mapboxgl.Map({
             container: 'map', // Container ID
-            style: 'mapbox://styles/zhaobo/cm6tujiqx001n01pr10hi3dp6', // Map style to use
+            style: 'mapbox://styles/mapbox/light-v11', // Map style to use
             center: [-122.36036851234655, 47.62068406114724], // Starting position [lng, lat]
             zoom: 11 // Starting zoom level
         });
@@ -46,11 +46,49 @@
             // Initialize the geocoder
             accessToken: mapboxgl.accessToken, // Set the access token
             mapboxgl: mapboxgl, // Set the mapbox-gl instance
-            marker: false // Do not use the default marker style
+            marker: false, // Do not use the default marker style
+            placeholder: 'Search for places in Seattle', // Placeholder text for the search bar
+            bbox: [-122.56829893678618, 47.463805267229134, -122.03007526372448, 47.77092765965011], // Boundary for Berkeley
+            proximity: {
+                longitude: -122.33030499091473,
+                latitude: 47.60909302820181
+            } // Coordinates of UC Berkeley
         });
+
+
 
         // Add the geocoder to the map
         map.addControl(geocoder);
+
+
+        // After the map style has loaded on the page,
+        // add a source layer and default styling for a single point
+        map.on('load', () => {
+            map.addSource('single-point', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            });
+
+            map.addLayer({
+                id: 'point',
+                source: 'single-point',
+                type: 'circle',
+                paint: {
+                    'circle-radius': 100,
+                    'circle-color': 'red'
+                }
+            });
+
+            // Listen for the `result` event from the Geocoder
+            // `result` event is triggered when a user makes a selection
+            //  Add a marker at the result's coordinates
+            geocoder.on('result', (event) => {
+                map.getSource('single-point').setData(event.result.geometry);
+            });
+        });
     </script>
 </body>
 
